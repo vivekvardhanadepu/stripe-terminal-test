@@ -1,0 +1,29 @@
+{
+  "name": "react-native-stripe-terminal",
+  "title": "React Native Stripe Terminal",
+  "version": "1.1.0",
+  "description": "React Native Stripe Terminal",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/theopolisme/react-native-stripe-terminal.git",
+    "baseUrl": "https://github.com/theopolisme/react-native-stripe-terminal"
+  },
+  "keywords": [
+    "react-native"
+  ],
+  "author": {
+    "name": "Theo Patt",
+    "email": "theo@theopatt.com"
+  },
+  "license": "MIT",
+  "licenseFilename": "LICENSE",
+  "readmeFilename": "README.md",
+  "peerDependencies": {
+    "react": "^16.2.0",
+    "react-native": "^0.52.0"
+  }
+}
