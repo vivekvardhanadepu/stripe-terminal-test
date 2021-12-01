@@ -37,8 +37,9 @@ export default class App extends Component {
 
     this.discover = this.discover.bind(this);
     this.createPayment = this.createPayment.bind(this);
-    // }
+  }
 
+  componentDidMount() {
     // componentDidMount() {
     //   if (Platform.OS === "android") {
     (async () => {
@@ -49,7 +50,7 @@ export default class App extends Component {
       if (granted) {
         console.log("You can use the ACCESS_FINE_LOCATION");
       } else {
-        (async function requestLocationPermission() {
+        await (async function requestLocationPermission() {
           try {
             const granted = await PermissionsAndroid.request(
               PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
@@ -74,93 +75,90 @@ export default class App extends Component {
       // });
       // },
       // });
-    })();
-  }
-  // }
 
-  componentDidMount() {
-    StripeTerminal.initialize({
-      fetchConnectionToken: () => {
-        console.log("fetching connection token");
-        return fetch("https://4c8a-49-204-189-63.ngrok.io/connection_token", {
-          method: "POST",
-        })
-          .then((resp) => resp.json())
-          .then((data) => {
-            console.log("got data fetchConnectionToken", data);
-            return data.secret;
-          });
-      },
-    });
+      StripeTerminal.initialize({
+        fetchConnectionToken: () => {
+          console.log("fetching connection token");
+          return fetch("https://4c8a-49-204-189-63.ngrok.io/connection_token", {
+            method: "POST",
+          })
+            .then((resp) => resp.json())
+            .then((data) => {
+              console.log("got data fetchConnectionToken", data);
+              return data.secret;
+            });
+        },
+      });
 
-    const discoverListener = StripeTerminal.addReadersDiscoveredListener(
-      (readers) => {
-        console.log("readers discovered", readers);
-        if (
-          readers.length &&
-          !this.state.readerConnected &&
-          !this.state.isConnecting
-        ) {
-          this.setState({ isConnecting: true });
-          StripeTerminal.connectReader(
-            readers[2].serialNumber,
-            "tml_DzDeZgFF76H5lT"
-          )
-            .then(() => {
-              console.log("connected to reader");
-              this.setState({ isConnecting: false });
-            })
-            .catch((e) => console.log("failed to connect", e));
+      const discoverListener = StripeTerminal.addReadersDiscoveredListener(
+        (readers) => {
+          console.log("readers discovered", readers);
+          if (
+            readers.length &&
+            !this.state.readerConnected &&
+            !this.state.isConnecting
+          ) {
+            this.setState({ isConnecting: true });
+            StripeTerminal.connectReader(
+              readers[2].serialNumber,
+              "tml_DzDeZgFF76H5lT"
+            )
+              .then(() => {
+                console.log("connected to reader");
+                this.setState({ isConnecting: false });
+              })
+              .catch((e) => console.log("failed to connect", e));
+          }
         }
-      }
-    );
-    // This firing without error does not mean the SDK is not still discovering. Just that it found readers.
-    // The SDK must be actively discovering in order to connect.
-    const discoverCompleteListener = StripeTerminal.addAbortDiscoverReadersCompletionListener(
-      ({ error }) => {
-        console.log("AbortDiscoverReadersCompletionListener");
-        if (error) {
+      );
+      // This firing without error does not mean the SDK is not still discovering. Just that it found readers.
+      // The SDK must be actively discovering in order to connect.
+      const discoverCompleteListener = StripeTerminal.addAbortDiscoverReadersCompletionListener(
+        ({ error }) => {
+          console.log("AbortDiscoverReadersCompletionListener");
+          if (error) {
+            this.setState({
+              displayText: "Discovery completed with error: " + error,
+            });
+          }
+        }
+      );
+
+      // Handle changes in reader connection status
+      const connectionStatusListener = StripeTerminal.addDidChangeConnectionStatusListener(
+        (event) => {
+          // Can check event.status against constants like:
+          if (event.status === StripeTerminal.ConnectionStatusConnecting) {
+            this.setState({ displayText: "Connecting..." });
+          }
+          if (event.status === StripeTerminal.ConnectionStatusConnected) {
+            this.setState({ displayText: "Connected successfully" });
+          }
+        }
+      );
+
+      // Handle unexpected disconnects
+      const disconnectListener = StripeTerminal.addDidReportUnexpectedReaderDisconnectListener(
+        (reader) => {
           this.setState({
-            displayText: "Discovery completed with error: " + error,
+            displayText:
+              "Unexpectedly disconnected from reader " + reader.serialNumber,
           });
         }
-      }
-    );
+      );
 
-    // Handle changes in reader connection status
-    const connectionStatusListener = StripeTerminal.addDidChangeConnectionStatusListener(
-      (event) => {
-        // Can check event.status against constants like:
-        if (event.status === StripeTerminal.ConnectionStatusConnecting) {
-          this.setState({ displayText: "Connecting..." });
+      // Pass StripeTerminal logs to the Javascript console, if needed
+      const logListener = StripeTerminal.addLogListener((log) => {
+        console.log("[StripeTerminal] -- " + log);
+      });
+
+      const inputListener = StripeTerminal.addDidRequestReaderInputListener(
+        (text) => {
+          // `text` is a prompt like "Retry Card".
+          this.setState({ displayText: text });
         }
-        if (event.status === StripeTerminal.ConnectionStatusConnected) {
-          this.setState({ displayText: "Connected successfully" });
-        }
-      }
-    );
-
-    // Handle unexpected disconnects
-    const disconnectListener = StripeTerminal.addDidReportUnexpectedReaderDisconnectListener(
-      (reader) => {
-        this.setState({
-          displayText:
-            "Unexpectedly disconnected from reader " + reader.serialNumber,
-        });
-      }
-    );
-
-    // Pass StripeTerminal logs to the Javascript console, if needed
-    const logListener = StripeTerminal.addLogListener((log) => {
-      console.log("[StripeTerminal] -- " + log);
-    });
-
-    const inputListener = StripeTerminal.addDidRequestReaderInputListener(
-      (text) => {
-        // `text` is a prompt like "Retry Card".
-        this.setState({ displayText: text });
-      }
-    );
+      );
+    })();
   }
 
   componentWillUnmount() {

@@ -29,8 +29,20 @@ android {
     versionCode 1
     versionName "1.0"
   }
+
+  configurations.all {
+    resolutionStrategy {
+      exclude group: "org.jetbrains.kotlinx", module: "kotlinx-coroutines-debug"
+    }
+  }
+
   lintOptions {
     abortOnError false
+  }
+
+  packagingOptions{
+    exclude 'META-INF/*'
+    exclude("META-INF/*.kotlin_module")
   }
 }
 

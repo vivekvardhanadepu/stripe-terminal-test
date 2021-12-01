@@ -106,7 +106,7 @@ class StripeTerminal {
     return new Promise((resolve, reject) => {
       console.log("getting into promise", event);
       const subscription = this.listener.addListener(event, (data) => {
-        console.log("whatever", data);
+        console.log("whatever", data, event);
         if (data && data.error) {
           reject(data);
         } else {
@@ -126,6 +126,7 @@ class StripeTerminal {
     return new Promise((resolve, reject) => {
       if (Platform.OS === "android") {
         RNStripeTerminal.initialize((status) => {
+          console.log("initialize", status);
           if (status.isInitialized === true) {
             resolve();
           } else {
