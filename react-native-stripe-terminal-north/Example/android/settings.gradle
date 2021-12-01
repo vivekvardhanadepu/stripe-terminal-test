@@ -1,0 +1,5 @@
+rootProject.name = 'Example'
+include ':react-native-stripe-terminal'
+project(':react-native-stripe-terminal').projectDir = new File(rootProject.projectDir, '../react-native-stripe-terminal/android')
+
+include ':app'
