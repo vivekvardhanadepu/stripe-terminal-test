@@ -180,7 +180,6 @@ public class MainActivity extends AppCompatActivity {
         final DiscoveryListener discoveryListener = new DiscoveryListener() {
             @Override
             public void onUpdateDiscoveredReaders(@NonNull List<Reader> readers) {
-                System.out.println("readers "+readers);
                 runOnUiThread(() -> readerAdapter.updateReaders((List<Reader>) readers));
             }
 

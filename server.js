@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 const { resolve } = require("path");
 // This is a sample test API key. Sign in to see examples pre-filled with your key.
-const stripe = require("stripe")("sk_test_Hrs6SAopgFPF0bZXSN3f6ELN");
+const stripe = require("stripe")("sk_test_26PHem9AhJZvU623DfE1x4sd");
 
 app.use(express.static("public"));
 app.use(express.json());
@@ -30,7 +30,7 @@ app.post("/connection_token", async (req, res) => {
   console.log(connectionToken);
   res.json({ secret: connectionToken.secret });
 });
-undefined;
+
 app.post("/capture_payment_intent", async (req, res) => {
   const intent = await stripe.paymentIntents.capture(req.body.id);
   res.send(intent);

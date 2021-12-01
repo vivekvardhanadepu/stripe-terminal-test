@@ -16,7 +16,7 @@ public class ApiClient {
 
     // Use 10.0.2.2 when running with an emulator
     // See https://developer.android.com/studio/run/emulator-networking.html#networkaddresses
-    public static final String BACKEND_URL = "http://192.168.0.107:4242";
+    public static final String BACKEND_URL = "https://stripe-backend-test2.herokuapp.com";
 
     private static final OkHttpClient mClient = new OkHttpClient.Builder()
             .addNetworkInterceptor(new StethoInterceptor())
