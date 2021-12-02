@@ -82,7 +82,7 @@ export default class App extends Component {
     StripeTerminal.initialize({
       fetchConnectionToken: () => {
         console.log("fetching connection token");
-        return fetch("https://6fdf-49-204-189-63.ngrok.io/connection_token", {
+        return fetch("https://f778-49-204-189-63.ngrok.io/connection_token", {
           method: "POST",
         })
           .then((resp) => resp.json())
@@ -194,6 +194,38 @@ export default class App extends Component {
     StripeTerminal.createPaymentIntent({ amount: 1200, currency: "gbp" })
       .then((intent) => {
         this.setState({ completedPayment: intent });
+        StripeTerminal.collectPaymentMethod()
+          .then((intent) => {
+            this.setState({ completedPayment: intent });
+            StripeTerminal.processPayment()
+              .then((intent) => {
+                this.setState({ completedPayment: intent });
+                console.log("payment success", intent.stripeId);
+                fetch(
+                  "https://f778-49-204-189-63.ngrok.io/capture_payment_intent",
+                  {
+                    method: "POST",
+                    headers: {
+                      Accept: "application/json",
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ id: intent.stripeId }),
+                  }
+                )
+                  .then((resp) => {
+                    console.log("got data", resp);
+                  })
+                  .catch((err) => {
+                    console.log("capture error", err);
+                  });
+              })
+              .catch((err) => {
+                this.setState({ completedPayment: err });
+              });
+          })
+          .catch((err) => {
+            this.setState({ completedPayment: err });
+          });
       })
       .catch((err) => {
         this.setState({ completedPayment: err });
@@ -208,14 +240,13 @@ export default class App extends Component {
           Connected: {this.state.readerConnected}
         </Text>
         <Text style={styles.instructions}>
-          {JSON.stringify(this.state.completedPayment)}
+          {/* {JSON.stringify(this.state.completedPayment)} */}
         </Text>
-
         <TouchableOpacity onPress={this.discover}>
           <Text>Discover readers</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={this.createPayment}>
-          <Text>Create payment</Text>
+          <Text>Pay</Text>
         </TouchableOpacity>
       </View>
     );
