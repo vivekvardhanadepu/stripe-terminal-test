@@ -84,19 +84,16 @@ public class RNStripeTerminalModule extends ReactContextBaseJavaModule implement
     }
 
     public void sendEventWithName(String eventName, WritableMap eventData){
-        Toast.makeText(getContext().getApplicationContext(),"Hello Javatpoint "+eventName,Toast.LENGTH_SHORT).show();
         getContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
                 .emit(eventName, eventData);
     }
 
     public void sendEventWithName(String eventName, Object eventData){
-        Toast.makeText(getContext().getApplicationContext(),"Hello Javatpoint "+eventName,Toast.LENGTH_SHORT).show();
         getContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
                 .emit(eventName, eventData);
     }
 
     public void sendEventWithName(String eventName, WritableArray eventData){
-        Toast.makeText(getContext().getApplicationContext(),"Hello Javatpoint "+eventName,Toast.LENGTH_SHORT).show();
         getContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
                 .emit(eventName, eventData);
     }
@@ -171,6 +168,7 @@ public class RNStripeTerminalModule extends ReactContextBaseJavaModule implement
             Callback statusCallback = new Callback() {
                 @Override
                 public void onSuccess() {
+                    System.out.println("success discover readers");
                     pendingDiscoverReaders = null;
                     WritableMap readerCompletionResponse = Arguments.createMap();
                     sendEventWithName(EVENT_READER_DISCOVERY_COMPLETION,readerCompletionResponse);
@@ -223,7 +221,7 @@ public class RNStripeTerminalModule extends ReactContextBaseJavaModule implement
         try {
             System.out.println("initialize ");
         System.out.println(terminalListener);
-//        tokenProvider.fetchConnectionToken(pendingConnectionTokenCallback);
+            System.out.println(tokenProvider);
             Terminal.initTerminal(getContext().getApplicationContext(), logLevel, tokenProvider, terminalListener);
             lastReaderEvent = ReaderEvent.CARD_REMOVED;
             isInit = true;
@@ -685,14 +683,11 @@ public class RNStripeTerminalModule extends ReactContextBaseJavaModule implement
         sendEventWithName(EVENT_READERS_DISCOVERED,readersDiscoveredArr);
     }
 
-     @Override
-     public void fetchConnectionToken(@Nonnull ConnectionTokenCallback connectionTokenCallback) {
-         Toast.makeText(getReactApplicationContext(),"fetching ConnectionToken",Toast.LENGTH_SHORT).show();
-         pendingConnectionTokenCallback = connectionTokenCallback;
-         sendEventWithName(EVENT_REQUEST_CONNECTION_TOKEN,Arguments.createMap());
-     }
-
-
+    @Override
+    public void fetchConnectionToken(@Nonnull ConnectionTokenCallback connectionTokenCallback) {
+        pendingConnectionTokenCallback = connectionTokenCallback;
+        sendEventWithName(EVENT_REQUEST_CONNECTION_TOKEN,Arguments.createMap());
+    }
 
     @Override
     public void onReportLowBatteryWarning() {
