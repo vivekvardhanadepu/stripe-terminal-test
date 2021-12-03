@@ -106,7 +106,7 @@ class StripeTerminal {
     return new Promise((resolve, reject) => {
       console.log("getting into promise", event);
       const subscription = this.listener.addListener(event, (data) => {
-        console.log("whatever", data);
+        console.log("wrapPromise return in listener", data);
         if (data && data.error) {
           reject(data);
         } else {

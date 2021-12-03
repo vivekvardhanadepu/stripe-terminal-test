@@ -25,14 +25,14 @@ public class ReaderClickListener {
       //
       // Since the simulated reader is not associated with a real location, we recommend
       // specifying its existing mock location.
-      String locationId;
-      if (reader.getRegisteredLocation() != null) {
-          locationId = reader.getRegisteredLocation().getId();
-      } else {
-          // The reader is not associated with a location. Insert business logic here to determine
-          // where the reader should be registered, and pass the location ID to the reader.
-          throw new RuntimeException("No location ID available");
-      }
+      String locationId="tml_DzDeZgFF76H5lT";
+//      if (reader.getRegisteredLocation() != null) {
+//          locationId = reader.getRegisteredLocation().getId();
+//      } else {
+//          // The reader is not associated with a location. Insert business logic here to determine
+//          // where the reader should be registered, and pass the location ID to the reader.
+//          throw new RuntimeException("No location ID available");
+//      }
 
       ConnectionConfiguration.BluetoothConnectionConfiguration connectionConfig =
             new ConnectionConfiguration.BluetoothConnectionConfiguration(locationId);

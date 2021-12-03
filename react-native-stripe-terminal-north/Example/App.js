@@ -14,6 +14,7 @@ import {
   View,
   TouchableOpacity,
   PermissionsAndroid,
+  TextInput,
 } from "react-native";
 import StripeTerminal from "./react-native-stripe-terminal";
 
@@ -31,8 +32,11 @@ export default class App extends Component {
     this.state = {
       isConnecting: false,
       readerConnected: false,
-      completedPayment: null,
+      completedPayment: "loading...",
       displayText: "Loading...",
+      connectedReader: "None",
+      isSimulated: false,
+      locationId: "tml_DzDeZgFF76H5lT",
     };
 
     this.discover = this.discover.bind(this);
@@ -70,6 +74,7 @@ export default class App extends Component {
           }
         })();
         console.log("ACCESS_FINE_LOCATION permission denied");
+        alert("Location permission denied");
       }
       // });
       // },
@@ -81,14 +86,18 @@ export default class App extends Component {
   componentDidMount() {
     StripeTerminal.initialize({
       fetchConnectionToken: () => {
+        alert("fetchConnectionToken");
         console.log("fetching connection token");
-        return fetch("https://f778-49-204-189-63.ngrok.io/connection_token", {
+        return fetch("https://wadha.herokuapp.com/connection_token", {
           method: "POST",
         })
           .then((resp) => resp.json())
           .then((data) => {
             console.log("got data fetchConnectionToken", data);
             return data.secret;
+          })
+          .catch((err) => {
+            alert("fetchConnectionToken " + JSON.stringify(err));
           });
       },
     });
@@ -96,6 +105,9 @@ export default class App extends Component {
     const discoverListener = StripeTerminal.addReadersDiscoveredListener(
       (readers) => {
         console.log("readers discovered", readers);
+        for (let i = 0; i < readers.length; i++) {
+          alert(readers[i].serialNumber);
+        }
         if (
           readers.length &&
           !this.state.readerConnected &&
@@ -103,25 +115,32 @@ export default class App extends Component {
         ) {
           this.setState({ isConnecting: true });
           StripeTerminal.connectReader(
-            readers[2].serialNumber,
-            "tml_DzDeZgFF76H5lT"
+            readers[0].serialNumber,
+            this.state.locationId
           )
             .then(() => {
               console.log("connected to reader");
-              this.setState({ isConnecting: false });
+              this.setState({
+                isConnecting: false,
+                connectedReader: readers[0].serialNumber,
+                completedPayment: "connected to reader",
+              });
             })
-            .catch((e) => console.log("failed to connect", e));
+            .catch((e) => {
+              console.log("failed to connect", e);
+              alert("failed to connect " + JSON.stringify(e));
+            });
         }
       }
     );
     // This firing without error does not mean the SDK is not still discovering. Just that it found readers.
     // The SDK must be actively discovering in order to connect.
     const discoverCompleteListener = StripeTerminal.addAbortDiscoverReadersCompletionListener(
-      ({ error }) => {
+      (data) => {
         console.log("AbortDiscoverReadersCompletionListener");
-        if (error) {
+        if (data.error) {
           this.setState({
-            displayText: "Discovery completed with error: " + error,
+            completedPayment: "Discovery completed with error: " + data.error,
           });
         }
       }
@@ -179,74 +198,104 @@ export default class App extends Component {
       // StripeTerminal.DeviceTypeChipper2X,
       // StripeTerminal.DiscoveryMethodBluetoothProximity
       1,
-      1
+      this.state.isSimulated ? 1 : 0
     )
       .then((readers) => {
         console.log("readers", readers);
       })
       .catch((err) => {
         console.log("error", err);
+        alert("discover readers error: " + JSON.stringify(err));
       });
     console.log("discoverReaders");
   }
 
   createPayment() {
+    this.setState({ completedPayment: "creating payment Intent" });
     StripeTerminal.createPaymentIntent({ amount: 1200, currency: "gbp" })
       .then((intent) => {
-        this.setState({ completedPayment: intent });
+        this.setState({ completedPayment: "created payment Intent" });
         StripeTerminal.collectPaymentMethod()
           .then((intent) => {
-            this.setState({ completedPayment: intent });
+            console.log("payment method", intent);
+            this.setState({ completedPayment: "collected payment method" });
             StripeTerminal.processPayment()
               .then((intent) => {
-                this.setState({ completedPayment: intent });
+                this.setState({ completedPayment: "payment processed" });
                 console.log("payment success", intent.stripeId);
-                fetch(
-                  "https://f778-49-204-189-63.ngrok.io/capture_payment_intent",
-                  {
-                    method: "POST",
-                    headers: {
-                      Accept: "application/json",
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ id: intent.stripeId }),
-                  }
-                )
+                fetch("https://wadha.herokuapp.com/capture_payment_intent", {
+                  method: "POST",
+                  headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({ id: intent.stripeId }),
+                })
                   .then((resp) => {
-                    console.log("got data", resp);
+                    console.log("got data capture", resp);
+                    this.setState({ completedPayment: "payment completed" });
                   })
                   .catch((err) => {
                     console.log("capture error", err);
+                    this.setState({ completedPayment: err });
+                    alert("capture error " + JSON.stringify(err));
                   });
               })
               .catch((err) => {
                 this.setState({ completedPayment: err });
+                alert("process payment error " + JSON.stringify(err));
               });
           })
           .catch((err) => {
             this.setState({ completedPayment: err });
+            alert("collect payment method error " + JSON.stringify(err));
           });
       })
       .catch((err) => {
         this.setState({ completedPayment: err });
+        alert("create payment intent error " + JSON.stringify(err));
       });
   }
 
   render() {
     return (
       <View style={styles.container}>
-        <Text style={styles.welcome}>{this.state.displayText}</Text>
+        {/* <Text style={styles.welcome}>{this.state.displayText}</Text> */}
         <Text style={styles.instructions}>
-          Connected: {this.state.readerConnected}
+          Connected: {this.state.connectedReader}
         </Text>
-        <Text style={styles.instructions}>
-          {/* {JSON.stringify(this.state.completedPayment)} */}
+        <Text style={styles.welcome}>
+          {JSON.stringify(this.state.completedPayment)}
         </Text>
-        <TouchableOpacity onPress={this.discover}>
-          <Text>Discover readers</Text>
+        <View style={{ flexDirection: "row" }}>
+          <TextInput
+            style={styles.input}
+            onChangeText={(value) => {
+              this.setState({ locationId: value });
+            }}
+            value={this.state.locationId}
+            placeholder="tml_DzDeZgFF76H5lT"
+          />
+          <TouchableOpacity style={styles.btn} onPress={this.discover}>
+            <Text style={styles.btnText}>Discover readers</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity style={styles.btn} onPress={this.createPayment}>
+          <Text style={styles.btnText}>Pay</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={this.createPayment}>
-          <Text>Pay</Text>
+        <TouchableOpacity
+          style={styles.btn}
+          onPress={() => {
+            console.log("state change simulation", this.state.isSimulated);
+            this.setState({ isSimulated: !this.state.isSimulated });
+          }}
+        >
+          <Text style={styles.btnText}>
+            {this.state.isSimulated
+              ? "un-simulate readers"
+              : "simulate readers"}
+          </Text>
         </TouchableOpacity>
       </View>
     );
@@ -269,5 +318,22 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#333333",
     marginBottom: 5,
+  },
+  btn: {
+    backgroundColor: "#9932CC",
+    borderColor: "grey",
+    borderWidth: 1,
+    marginVertical: 10,
+    padding: 10,
+  },
+  btnText: {
+    textAlign: "center",
+    color: "white",
+  },
+  input: {
+    height: 40,
+    margin: 12,
+    borderWidth: 1,
+    padding: 10,
   },
 });

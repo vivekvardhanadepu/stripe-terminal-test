@@ -184,7 +184,7 @@ public class RNStripeTerminalModule extends ReactContextBaseJavaModule implement
             };
             abortDiscoverReaders();
             pendingDiscoverReaders = Terminal.getInstance().discoverReaders(discoveryConfiguration, this, statusCallback);
-            Toast.makeText(getContext().getApplicationContext(),"after2",Toast.LENGTH_SHORT).show();
+            // Toast.makeText(getContext().getApplicationContext(),"after2",Toast.LENGTH_SHORT).show();
 
         }catch (Exception e){
             e.printStackTrace();

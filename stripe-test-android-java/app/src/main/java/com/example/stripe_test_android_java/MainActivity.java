@@ -54,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     private final DiscoveryConfiguration discoveryConfig =
-            new DiscoveryConfiguration(0, DiscoveryMethod.BLUETOOTH_SCAN, true);
+            new DiscoveryConfiguration(0, DiscoveryMethod.BLUETOOTH_SCAN, false);
 
     private final ReaderClickListener readerClickListener =
             new ReaderClickListener(new WeakReference<MainActivity>(this));
