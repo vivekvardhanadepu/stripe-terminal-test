@@ -17,6 +17,7 @@ import {
   TextInput,
 } from "react-native";
 import StripeTerminal from "./react-native-stripe-terminal";
+import Geolocation from "react-native-geolocation-service";
 
 const instructions = Platform.select({
   ios: "Press Cmd+R to reload,\n" + "Cmd+D or shake for dev menu",
@@ -37,150 +38,193 @@ export default class App extends Component {
       connectedReader: "None",
       isSimulated: false,
       locationId: "tml_DzDeZgFF76H5lT",
+      locationPermission: false,
+      locationEnabled: true,
     };
 
     this.discover = this.discover.bind(this);
     this.createPayment = this.createPayment.bind(this);
-    // }
+  }
 
-    // componentDidMount() {
-    //   if (Platform.OS === "android") {
-    (async () => {
-      const granted = await PermissionsAndroid.check(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-      );
+  async askPermission(permission) {
+    if (Platform.OS === "android") {
+      let granted = await PermissionsAndroid.check(permission);
 
       if (granted) {
-        console.log("You can use the ACCESS_FINE_LOCATION");
+        console.log("location permission 52", this.state.locationPermission);
+        this.setState({ locationPermission: true });
+        console.log("location permission 54", this.state.locationPermission);
+        console.log("You can use the", permission);
       } else {
-        (async function requestLocationPermission() {
-          try {
-            const granted = await PermissionsAndroid.request(
-              PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-              {
-                title: "Example App",
-                message: "Example App access to your location ",
-              }
-            );
-            if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-              console.log("You can use the location");
-              alert("You can use the location");
-            } else {
-              console.log("location permission denied");
-              alert("Location permission denied");
-            }
-          } catch (err) {
-            console.warn(err);
+        try {
+          granted = await PermissionsAndroid.request(permission, {
+            title: "Example App",
+            message: "Example App needs access to your location ",
+          });
+          if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+            this.setState({ locationPermission: true });
+            console.log("You can use the", permission);
+            alert("You can use the " + permission);
+          } else {
+            console.log("location permission denied");
+            alert("Location permission denied");
           }
-        })();
-        console.log("ACCESS_FINE_LOCATION permission denied");
-        alert("Location permission denied");
+        } catch (err) {
+          console.warn(err);
+          console.log("location permission denied");
+          alert("Location permission denied");
+        }
       }
-      // });
-      // },
-      // });
-    })();
+    }
   }
-  // }
 
-  componentDidMount() {
-    StripeTerminal.initialize({
-      fetchConnectionToken: () => {
-        alert("fetchConnectionToken");
-        console.log("fetching connection token");
-        return fetch("https://wadha.herokuapp.com/connection_token", {
-          method: "POST",
-        })
-          .then((resp) => resp.json())
-          .then((data) => {
-            console.log("got data fetchConnectionToken", data);
-            return data.secret;
+  async componentDidMount() {
+    await this.askPermission(
+      PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION
+    );
+    await this.askPermission(
+      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+    );
+    console.log("location permission", this.state.locationPermission);
+    if (this.state.locationPermission && this.state.locationEnabled) {
+      StripeTerminal.initialize({
+        fetchConnectionToken: () => {
+          alert("abracadabra");
+          console.log("fetching connection token");
+          return fetch("https://wadha.herokuapp.com/connection_token", {
+            method: "POST",
           })
-          .catch((err) => {
-            alert("fetchConnectionToken " + JSON.stringify(err));
-          });
-      },
-    });
-
-    const discoverListener = StripeTerminal.addReadersDiscoveredListener(
-      (readers) => {
-        console.log("readers discovered", readers);
-        for (let i = 0; i < readers.length; i++) {
-          alert(readers[i].serialNumber);
-        }
-        if (
-          readers.length &&
-          !this.state.readerConnected &&
-          !this.state.isConnecting
-        ) {
-          this.setState({ isConnecting: true });
-          StripeTerminal.connectReader(
-            readers[0].serialNumber,
-            this.state.locationId
-          )
-            .then(() => {
-              console.log("connected to reader");
-              this.setState({
-                isConnecting: false,
-                connectedReader: readers[0].serialNumber,
-                completedPayment: "connected to reader",
-              });
+            .then((resp) => resp.json())
+            .then((data) => {
+              console.log("got data fetchConnectionToken", data);
+              return data.secret;
             })
-            .catch((e) => {
-              console.log("failed to connect", e);
-              alert("failed to connect " + JSON.stringify(e));
+            .catch((err) => {
+              alert("fetchConnectionToken " + JSON.stringify(err));
             });
+        },
+      })
+        .then((data) => {
+          console.log("initialize", data);
+          return data.secret;
+        })
+        .catch((err) => {
+          alert("initialize: " + JSON.stringify(err));
+        });
+
+      const discoverListener = StripeTerminal.addReadersDiscoveredListener(
+        (readers) => {
+          console.log("readers discovered", readers);
+          for (let i = 0; i < readers.length; i++) {
+            alert(readers[i].serialNumber);
+          }
+          if (
+            readers.length &&
+            !this.state.readerConnected &&
+            !this.state.isConnecting
+          ) {
+            this.setState({ isConnecting: true });
+            StripeTerminal.connectReader(
+              readers[0].serialNumber,
+              this.state.locationId
+            )
+              .then(() => {
+                console.log("connected to reader");
+                this.setState({
+                  isConnecting: false,
+                  connectedReader: readers[0].serialNumber,
+                  completedPayment: "connected to reader",
+                });
+              })
+              .catch((e) => {
+                console.log("failed to connect", e);
+                alert("failed to connect " + JSON.stringify(e));
+              });
+          }
         }
-      }
-    );
-    // This firing without error does not mean the SDK is not still discovering. Just that it found readers.
-    // The SDK must be actively discovering in order to connect.
-    const discoverCompleteListener = StripeTerminal.addAbortDiscoverReadersCompletionListener(
-      (data) => {
-        console.log("AbortDiscoverReadersCompletionListener");
-        if (data.error) {
+      );
+
+      // This firing without error does not mean the SDK is not still discovering. Just that it found readers.
+      // The SDK must be actively discovering in order to connect.
+      const discoverCompleteListener = StripeTerminal.addAbortDiscoverReadersCompletionListener(
+        (data) => {
+          console.log("AbortDiscoverReadersCompletionListener");
+          if (data.error) {
+            this.setState({
+              completedPayment: "Discovery completed with error: " + data.error,
+            });
+          }
+        }
+      );
+
+      // Handle changes in reader connection status
+      const connectionStatusListener = StripeTerminal.addDidChangeConnectionStatusListener(
+        (event) => {
+          // Can check event.status against constants like:
+          if (event.status === StripeTerminal.ConnectionStatusConnecting) {
+            this.setState({ displayText: "Connecting..." });
+          }
+          if (event.status === StripeTerminal.ConnectionStatusConnected) {
+            this.setState({ displayText: "Connected successfully" });
+          }
+        }
+      );
+
+      // Handle unexpected disconnects
+      const disconnectListener = StripeTerminal.addDidReportUnexpectedReaderDisconnectListener(
+        (reader) => {
           this.setState({
-            completedPayment: "Discovery completed with error: " + data.error,
+            displayText:
+              "Unexpectedly disconnected from reader " + reader.serialNumber,
           });
         }
-      }
-    );
+      );
 
-    // Handle changes in reader connection status
-    const connectionStatusListener = StripeTerminal.addDidChangeConnectionStatusListener(
-      (event) => {
-        // Can check event.status against constants like:
-        if (event.status === StripeTerminal.ConnectionStatusConnecting) {
-          this.setState({ displayText: "Connecting..." });
+      // Pass StripeTerminal logs to the Javascript console, if needed
+      const logListener = StripeTerminal.addLogListener((log) => {
+        console.log("[StripeTerminal] -- " + log);
+      });
+
+      const inputListener = StripeTerminal.addDidRequestReaderInputListener(
+        (text) => {
+          // `text` is a prompt like "Retry Card".
+          this.setState({ displayText: text });
         }
-        if (event.status === StripeTerminal.ConnectionStatusConnected) {
-          this.setState({ displayText: "Connected successfully" });
-        }
-      }
-    );
-
-    // Handle unexpected disconnects
-    const disconnectListener = StripeTerminal.addDidReportUnexpectedReaderDisconnectListener(
-      (reader) => {
-        this.setState({
-          displayText:
-            "Unexpectedly disconnected from reader " + reader.serialNumber,
-        });
-      }
-    );
-
-    // Pass StripeTerminal logs to the Javascript console, if needed
-    const logListener = StripeTerminal.addLogListener((log) => {
-      console.log("[StripeTerminal] -- " + log);
-    });
-
-    const inputListener = StripeTerminal.addDidRequestReaderInputListener(
-      (text) => {
-        // `text` is a prompt like "Retry Card".
-        this.setState({ displayText: text });
-      }
-    );
+      );
+    }
   }
+
+  // componentDidUpdate() {
+  //   if (this.state.locationPermission) {
+  //     StripeTerminal.initialize({
+  //       fetchConnectionToken: () => {
+  //         alert("fetchConnectionToken");
+  //         console.log("fetching connection token");
+  //         return fetch("https://wadha.herokuapp.com/connection_token", {
+  //           method: "POST",
+  //         })
+  //           .then((resp) => resp.json())
+  //           .then((data) => {
+  //             console.log("got data fetchConnectionToken", data);
+  //             return data.secret;
+  //           })
+  //           .catch((err) => {
+  //             alert("fetchConnectionToken " + JSON.stringify(err));
+  //           });
+  //       },
+  //     })
+  //       .then((data) => {
+  //         console.log("initialize", data);
+  //         return data.secret;
+  //       })
+  //       .catch((err) => {
+  //         alert("initialize: " + JSON.stringify(err));
+  //       });
+  //   } else {
+  //     this.askPermission(PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION);
+  //     this.askPermission(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
+  //   }
+  // }
 
   // componentWillUnmount() {
   //   discoverListener.remove();

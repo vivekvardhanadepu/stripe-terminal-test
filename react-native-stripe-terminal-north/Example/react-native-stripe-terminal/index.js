@@ -122,23 +122,6 @@ class StripeTerminal {
 
   initialize({ fetchConnectionToken }) {
     this._fetchConnectionToken = fetchConnectionToken;
-    // console.log("fetchConnectionTopek", this._fetchConnectionToken);
-    // this._fetchConnectionToken()
-    //   .then((token) => {
-    //     if (token) {
-    //       RNStripeTerminal.setConnectionToken(token, null);
-    //     } else {
-    //       throw new Error(
-    //         "User-supplied `fetchConnectionToken` resolved successfully, but no token was returned."
-    //       );
-    //     }
-    //   })
-    //   .catch((err) =>
-    //     RNStripeTerminal.setConnectionToken(
-    //       null,
-    //       err.message || "Error in user-supplied `fetchConnectionToken`."
-    //     )
-    //   );
     return new Promise((resolve, reject) => {
       if (Platform.OS === "android") {
         RNStripeTerminal.initialize((status) => {
