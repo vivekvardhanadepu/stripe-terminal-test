@@ -1,29 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-package="com.example.stripe_test_android_java">
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.stripe.example.javaapp">
 
-<uses-permission android:name="android.permission.BLUETOOTH"/>
-<uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <!--  https://developer.android.com/about/versions/12/features/bluetooth-permissions  -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
-<application
-    android:name=".StripeTerminalApplication"
-    android:theme="@style/Theme.MaterialComponents"
-    android:allowBackup="true"
-    android:icon="@mipmap/ic_launcher"
-    android:label="@string/app_name"
-    android:roundIcon="@mipmap/ic_launcher_round"
-    android:supportsRtl="true">
-    <activity android:name=".MainActivity" android:exported="true">
-        <intent-filter>
-            <action android:name="android.intent.action.MAIN" />
-
-            <category android:name="android.intent.category.LAUNCHER" />
-        </intent-filter>
-
-    </activity>
-
-    <!-- Your normal application code here -->
-
-</application>
+    <application
+        android:name=".StripeTerminalApplication"
+        android:allowBackup="false"
+        android:icon="@mipmap/launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Example"
+        tools:ignore="GoogleAppIndexingWarning">
+        <activity android:name="com.stripe.example.javaapp.MainActivity"
+            android:screenOrientation="fullSensor"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
 
 </manifest>
