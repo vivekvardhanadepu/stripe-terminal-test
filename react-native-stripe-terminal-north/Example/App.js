@@ -44,9 +44,9 @@ export default class App extends Component {
       displayText: "Loading...",
       connectedReader: "None",
       isSimulated: false,
-      locationId: "tml_DzDeZgFF76H5lT",
+      locationId: "tml_EaKjewxc3xk5c6",
       locationPermission: false,
-      locationEnabled: true,
+      // locationEnabled: true,
     };
 
     this.discover = this.discover.bind(this);
@@ -61,6 +61,86 @@ export default class App extends Component {
     this.listener = addListener(({ locationEnabled }) => {
       console.log(`Location are ${locationEnabled ? "enabled" : "disabled"}`);
     });
+
+    this.discoverListener = StripeTerminal.addReadersDiscoveredListener(
+      (readers) => {
+        console.log("readers discovered", readers);
+        for (let i = 0; i < readers.length; i++) {
+          alert(readers[i].serialNumber);
+        }
+        if (
+          readers.length &&
+          !this.state.readerConnected &&
+          !this.state.isConnecting
+        ) {
+          this.setState({ isConnecting: true });
+          StripeTerminal.connectReader(
+            readers[0].serialNumber,
+            this.state.locationId
+          )
+            .then(() => {
+              console.log("connected to reader");
+              this.setState({
+                isConnecting: false,
+                connectedReader: readers[0].serialNumber,
+                completedPayment: "connected to reader",
+              });
+            })
+            .catch((e) => {
+              console.log("failed to connect", e);
+              alert("failed to connect " + JSON.stringify(e));
+            });
+        }
+      }
+    );
+
+    // This firing without error does not mean the SDK is not still discovering. Just that it found readers.
+    // The SDK must be actively discovering in order to connect.
+    this.discoverCompleteListener = StripeTerminal.addAbortDiscoverReadersCompletionListener(
+      (data) => {
+        console.log("AbortDiscoverReadersCompletionListener");
+        if (data.error) {
+          this.setState({
+            completedPayment: "Discovery completed with error: " + data.error,
+          });
+        }
+      }
+    );
+
+    // Handle changes in reader connection status
+    this.connectionStatusListener = StripeTerminal.addDidChangeConnectionStatusListener(
+      (event) => {
+        // Can check event.status against constants like:
+        if (event.status === StripeTerminal.ConnectionStatusConnecting) {
+          this.setState({ displayText: "Connecting..." });
+        }
+        if (event.status === StripeTerminal.ConnectionStatusConnected) {
+          this.setState({ displayText: "Connected successfully" });
+        }
+      }
+    );
+
+    // Handle unexpected disconnects
+    this.disconnectListener = StripeTerminal.addDidReportUnexpectedReaderDisconnectListener(
+      (reader) => {
+        this.setState({
+          displayText:
+            "Unexpectedly disconnected from reader " + reader.serialNumber,
+        });
+      }
+    );
+
+    // Pass StripeTerminal logs to the Javascript console, if needed
+    this.logListener = StripeTerminal.addLogListener((log) => {
+      console.log("[StripeTerminal] -- " + log);
+    });
+
+    this.inputListener = StripeTerminal.addDidRequestReaderInputListener(
+      (text) => {
+        // `text` is a prompt like "Retry Card".
+        this.setState({ displayText: text });
+      }
+    );
   }
 
   async askPermission(permission) {
@@ -96,9 +176,9 @@ export default class App extends Component {
   }
 
   async componentDidMount() {
-    await this.askPermission(
-      PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION
-    );
+    // await this.askPermission(
+    //   PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION
+    // );
     await this.askPermission(
       PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
     );
@@ -114,7 +194,7 @@ export default class App extends Component {
     if (this.state.locationPermission && isEnabled) {
       StripeTerminal.initialize({
         fetchConnectionToken: () => {
-          alert("abracadabra");
+          alert("fetchConnectionToken");
           console.log("fetching connection token");
           return fetch("https://wadha.herokuapp.com/connection_token", {
             method: "POST",
@@ -136,86 +216,6 @@ export default class App extends Component {
         .catch((err) => {
           alert("initialize: " + JSON.stringify(err));
         });
-
-      const discoverListener = StripeTerminal.addReadersDiscoveredListener(
-        (readers) => {
-          console.log("readers discovered", readers);
-          for (let i = 0; i < readers.length; i++) {
-            alert(readers[i].serialNumber);
-          }
-          if (
-            readers.length &&
-            !this.state.readerConnected &&
-            !this.state.isConnecting
-          ) {
-            this.setState({ isConnecting: true });
-            StripeTerminal.connectReader(
-              readers[0].serialNumber,
-              this.state.locationId
-            )
-              .then(() => {
-                console.log("connected to reader");
-                this.setState({
-                  isConnecting: false,
-                  connectedReader: readers[0].serialNumber,
-                  completedPayment: "connected to reader",
-                });
-              })
-              .catch((e) => {
-                console.log("failed to connect", e);
-                alert("failed to connect " + JSON.stringify(e));
-              });
-          }
-        }
-      );
-
-      // This firing without error does not mean the SDK is not still discovering. Just that it found readers.
-      // The SDK must be actively discovering in order to connect.
-      const discoverCompleteListener = StripeTerminal.addAbortDiscoverReadersCompletionListener(
-        (data) => {
-          console.log("AbortDiscoverReadersCompletionListener");
-          if (data.error) {
-            this.setState({
-              completedPayment: "Discovery completed with error: " + data.error,
-            });
-          }
-        }
-      );
-
-      // Handle changes in reader connection status
-      const connectionStatusListener = StripeTerminal.addDidChangeConnectionStatusListener(
-        (event) => {
-          // Can check event.status against constants like:
-          if (event.status === StripeTerminal.ConnectionStatusConnecting) {
-            this.setState({ displayText: "Connecting..." });
-          }
-          if (event.status === StripeTerminal.ConnectionStatusConnected) {
-            this.setState({ displayText: "Connected successfully" });
-          }
-        }
-      );
-
-      // Handle unexpected disconnects
-      const disconnectListener = StripeTerminal.addDidReportUnexpectedReaderDisconnectListener(
-        (reader) => {
-          this.setState({
-            displayText:
-              "Unexpectedly disconnected from reader " + reader.serialNumber,
-          });
-        }
-      );
-
-      // Pass StripeTerminal logs to the Javascript console, if needed
-      const logListener = StripeTerminal.addLogListener((log) => {
-        console.log("[StripeTerminal] -- " + log);
-      });
-
-      const inputListener = StripeTerminal.addDidRequestReaderInputListener(
-        (text) => {
-          // `text` is a prompt like "Retry Card".
-          this.setState({ displayText: text });
-        }
-      );
     }
   }
 
@@ -252,11 +252,11 @@ export default class App extends Component {
   // }
 
   componentWillUnmount() {
-    // discoverListener.remove();
-    // connectionStatusListener.remove();
-    // disconnectListener.remove();
-    // logListener.remove();
-    // inputListener.remove();
+    this.discoverListener.remove();
+    this.connectionStatusListener.remove();
+    this.disconnectListener.remove();
+    this.logListener.remove();
+    this.inputListener.remove();
     this.listener.remove();
   }
 
@@ -282,43 +282,71 @@ export default class App extends Component {
 
   createPayment() {
     this.setState({ completedPayment: "creating payment Intent" });
-    StripeTerminal.createPaymentIntent({ amount: 1200, currency: "gbp" })
-      .then((intent) => {
+    fetch("https://wadha.herokuapp.com/create_payment_intent", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        amount: Math.round(2 * 100),
+        currency: "GBP",
+        payment_method_types: ["card_present"],
+        capture_method: "manual",
+      }),
+    })
+      .then((data) => data.json())
+      .then((paymentIntent) => {
         this.setState({ completedPayment: "created payment Intent" });
-        StripeTerminal.collectPaymentMethod()
-          .then((intent) => {
-            console.log("payment method", intent);
-            this.setState({ completedPayment: "collected payment method" });
-            StripeTerminal.processPayment()
+        console.log("creating intent", paymentIntent);
+        StripeTerminal.retrievePaymentIntent(paymentIntent.client_secret)
+          .then(() => {
+            this.setState({ completedPayment: "retrieved payment Intent" });
+            StripeTerminal.collectPaymentMethod()
               .then((intent) => {
-                this.setState({ completedPayment: "payment processed" });
-                console.log("payment success", intent.stripeId);
-                fetch("https://wadha.herokuapp.com/capture_payment_intent", {
-                  method: "POST",
-                  headers: {
-                    Accept: "application/json",
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({ id: intent.stripeId }),
-                })
-                  .then((resp) => {
-                    console.log("got data capture", resp);
-                    this.setState({ completedPayment: "payment completed" });
+                console.log("payment method", intent);
+                this.setState({ completedPayment: "collected payment method" });
+                StripeTerminal.processPayment()
+                  .then((intent) => {
+                    this.setState({ completedPayment: "payment processed" });
+                    console.log("payment success", intent.stripeId);
+                    fetch(
+                      "https://wadha.herokuapp.com/capture_payment_intent",
+                      {
+                        method: "POST",
+                        headers: {
+                          Accept: "application/json",
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({ id: intent.stripeId }),
+                      }
+                    )
+                      .then((resp) => {
+                        console.log("got data capture", resp);
+                        this.setState({
+                          completedPayment: "payment completed",
+                        });
+                      })
+                      .catch((err) => {
+                        console.log("capture error", err);
+                        this.setState({ completedPayment: err });
+                        alert("capture error " + JSON.stringify(err));
+                      });
                   })
                   .catch((err) => {
-                    console.log("capture error", err);
                     this.setState({ completedPayment: err });
-                    alert("capture error " + JSON.stringify(err));
+                    alert("process payment error " + JSON.stringify(err));
                   });
               })
               .catch((err) => {
                 this.setState({ completedPayment: err });
-                alert("process payment error " + JSON.stringify(err));
+                alert("collect payment method error " + JSON.stringify(err));
               });
           })
           .catch((err) => {
+            console.log("retrieve payment intent error", err);
             this.setState({ completedPayment: err });
-            alert("collect payment method error " + JSON.stringify(err));
+            alert("retrieve error " + JSON.stringify(err));
           });
       })
       .catch((err) => {
