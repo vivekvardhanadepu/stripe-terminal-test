@@ -17,7 +17,14 @@ import {
   TextInput,
 } from "react-native";
 import StripeTerminal from "./react-native-stripe-terminal";
-import Geolocation from "react-native-geolocation-service";
+import LocationEnabler from "react-native-location-enabler";
+
+const {
+  PRIORITIES: { HIGH_ACCURACY },
+  addListener,
+  checkSettings,
+  requestResolutionSettings,
+} = LocationEnabler;
 
 const instructions = Platform.select({
   ios: "Press Cmd+R to reload,\n" + "Cmd+D or shake for dev menu",
@@ -29,7 +36,7 @@ const instructions = Platform.select({
 export default class App extends Component {
   constructor(props) {
     super(props);
-
+    console.log("StripeTerminal", LocationEnabler);
     this.state = {
       isConnecting: false,
       readerConnected: false,
@@ -44,6 +51,16 @@ export default class App extends Component {
 
     this.discover = this.discover.bind(this);
     this.createPayment = this.createPayment.bind(this);
+
+    this.config = {
+      priority: HIGH_ACCURACY, // default BALANCED_POWER_ACCURACY
+      alwaysShow: true, // default false
+      needBle: true, // default false
+    };
+
+    this.listener = addListener(({ locationEnabled }) => {
+      console.log(`Location are ${locationEnabled ? "enabled" : "disabled"}`);
+    });
   }
 
   async askPermission(permission) {
@@ -86,7 +103,15 @@ export default class App extends Component {
       PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
     );
     console.log("location permission", this.state.locationPermission);
-    if (this.state.locationPermission && this.state.locationEnabled) {
+    console.log("config", this.config);
+    let isEnabled = await checkSettings(this.config);
+    console.log("isEnabled", isEnabled);
+    if (!isEnabled) {
+      const acceptance = await requestResolutionSettings(this.config);
+      console.log("acceptance", acceptance);
+      isEnabled = true;
+    }
+    if (this.state.locationPermission && isEnabled) {
       StripeTerminal.initialize({
         fetchConnectionToken: () => {
           alert("abracadabra");
@@ -226,13 +251,14 @@ export default class App extends Component {
   //   }
   // }
 
-  // componentWillUnmount() {
-  //   discoverListener.remove();
-  //   connectionStatusListener.remove();
-  //   disconnectListener.remove();
-  //   logListener.remove();
-  //   inputListener.remove();
-  // }
+  componentWillUnmount() {
+    // discoverListener.remove();
+    // connectionStatusListener.remove();
+    // disconnectListener.remove();
+    // logListener.remove();
+    // inputListener.remove();
+    this.listener.remove();
+  }
 
   discover() {
     this.setState({ completedPayment: "discovery..." });
