@@ -231,3 +231,5 @@ lint/tmp/
 *.hprof
 
 # End of android Studio
+
+react-native-stripe-terminal-fork/

@@ -164,7 +164,7 @@ public class RNStripeTerminalModule extends ReactContextBaseJavaModule implement
         try {
 //            DiscoveryMethod discMethod;
 //            discMethod = DiscoveryMethod.valueOf(DiscoveryMethod.BLUETOOTH_SCAN.);  // Our only discovery method for Android
-            DiscoveryConfiguration discoveryConfiguration = new DiscoveryConfiguration(0, DiscoveryMethod.BLUETOOTH_SCAN, isSimulated);
+            DiscoveryConfiguration discoveryConfiguration = new DiscoveryConfiguration(0, DiscoveryMethod.INTERNET, isSimulated);
             Callback statusCallback = new Callback() {
                 @Override
                 public void onSuccess() {
@@ -184,7 +184,6 @@ public class RNStripeTerminalModule extends ReactContextBaseJavaModule implement
             };
             abortDiscoverReaders();
             pendingDiscoverReaders = Terminal.getInstance().discoverReaders(discoveryConfiguration, this, statusCallback);
-            // Toast.makeText(getContext().getApplicationContext(),"after2",Toast.LENGTH_SHORT).show();
 
         }catch (Exception e){
             e.printStackTrace();
@@ -219,13 +218,9 @@ public class RNStripeTerminalModule extends ReactContextBaseJavaModule implement
         String err = "";
         boolean isInit =false;
         try {
-            System.out.println("initialize ");
-        System.out.println(terminalListener);
-            System.out.println(tokenProvider);
             Terminal.initTerminal(getContext().getApplicationContext(), logLevel, tokenProvider, terminalListener);
             lastReaderEvent = ReaderEvent.CARD_REMOVED;
             isInit = true;
-            System.out.println("initialized");
         } catch (TerminalException e) {
             e.printStackTrace();
             err = e.getErrorMessage();
