@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   PermissionsAndroid,
   TextInput,
+  Switch,
 } from "react-native";
 import StripeTerminal from "./react-native-stripe-terminal";
 import LocationEnabler from "react-native-location-enabler";
@@ -44,8 +45,9 @@ export default class App extends Component {
       displayText: "Loading...",
       connectedReader: "None",
       isSimulated: false,
-      locationId: "tml_EaKjewxc3xk5c6",
+      locationId: "tml_*********",
       locationPermission: false,
+      discoveryMethod: 0, // false = internet, true = bluetooth
       // locationEnabled: true,
     };
 
@@ -65,6 +67,7 @@ export default class App extends Component {
     this.discoverListener = StripeTerminal.addReadersDiscoveredListener(
       (readers) => {
         console.log("readers discovered", readers);
+        alert("readers discovered: " + JSON.stringify(readers));
         for (let i = 0; i < readers.length; i++) {
           alert(readers[i].serialNumber);
         }
@@ -267,11 +270,13 @@ export default class App extends Component {
       //StripeTerminal.DeviceTypeReaderSimulator,
       // StripeTerminal.DeviceTypeChipper2X,
       // StripeTerminal.DiscoveryMethodBluetoothProximity
-      1,
-      this.state.isSimulated ? 1 : 0
+      this.state.discoveryMethod,
+      this.state.isSimulated ? 1 : 0,
+      this.state.locationId
     )
       .then((readers) => {
-        console.log("readers", readers);
+        console.log("discover readers complete", JSON.stringify(readers));
+        alert("discover readers complete" + JSON.stringify(readers));
       })
       .catch((err) => {
         console.log("error", err);
@@ -372,7 +377,7 @@ export default class App extends Component {
               this.setState({ locationId: value });
             }}
             value={this.state.locationId}
-            placeholder="tml_DzDeZgFF76H5lT"
+            placeholder="tml_*******"
           />
           <TouchableOpacity style={styles.btn} onPress={this.discover}>
             <Text style={styles.btnText}>Discover readers</Text>
@@ -382,7 +387,7 @@ export default class App extends Component {
         <TouchableOpacity style={styles.btn} onPress={this.createPayment}>
           <Text style={styles.btnText}>Pay</Text>
         </TouchableOpacity>
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.btn}
           onPress={() => {
             console.log("state change simulation", this.state.isSimulated);
@@ -394,7 +399,56 @@ export default class App extends Component {
               ? "un-simulate readers"
               : "simulate readers"}
           </Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
+        <View
+          style={{
+            flexDirection: "row",
+            flex: 1,
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ color: "black" }}>simulated</Text>
+          <Switch
+            trackColor={{ false: "#767577", true: "#81b0ff" }}
+            thumbColor={this.state.isSimulated ? "#f5dd4b" : "#f4f3f4"}
+            ios_backgroundColor="#3e3e3e"
+            onValueChange={() => {
+              this.setState({
+                isSimulated: !this.state.isSimulated,
+              });
+            }}
+            value={this.state.isSimulated}
+          />
+        </View>
+        <View
+          style={{
+            flexDirection: "row",
+            flex: 1,
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginTop: 20,
+          }}
+        >
+          <Text style={{ color: "black" }}>
+            {/* {this.state.discoveryMethod */}
+            Bluetooth
+            {/* : "simulate readers"} */}
+          </Text>
+          <Switch
+            trackColor={{ false: "#767577", true: "#81b0ff" }}
+            thumbColor={
+              this.state.discoveryMethod === 0 ? "#f5dd4b" : "#f4f3f4"
+            }
+            ios_backgroundColor="#3e3e3e"
+            onValueChange={() => {
+              this.setState({
+                discoveryMethod: this.state.discoveryMethod === 0 ? 1 : 0,
+              });
+            }}
+            value={Boolean(!this.state.discoveryMethod)}
+          />
+        </View>
       </View>
     );
   }

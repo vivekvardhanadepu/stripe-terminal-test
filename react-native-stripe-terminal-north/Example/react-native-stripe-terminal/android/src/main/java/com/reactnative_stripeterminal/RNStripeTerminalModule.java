@@ -158,13 +158,13 @@ public class RNStripeTerminalModule extends ReactContextBaseJavaModule implement
     }
 
     @ReactMethod
-    public void discoverReaders(int method, int simulated) {
+    public void discoverReaders(int method, int simulated, String locationId) {
         boolean isSimulated = simulated == 0?false:true;
         System.out.println("discoverReaders");
         try {
 //            DiscoveryMethod discMethod;
 //            discMethod = DiscoveryMethod.valueOf(DiscoveryMethod.BLUETOOTH_SCAN.);  // Our only discovery method for Android
-            DiscoveryConfiguration discoveryConfiguration = new DiscoveryConfiguration(0, DiscoveryMethod.INTERNET, isSimulated);
+            DiscoveryConfiguration discoveryConfiguration = new DiscoveryConfiguration(0, method==0?DiscoveryMethod.BLUETOOTH_SCAN:DiscoveryMethod.INTERNET, isSimulated, method==0?null:locationId);
             Callback statusCallback = new Callback() {
                 @Override
                 public void onSuccess() {

@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "start": "node node_modules/react-native/local-cli/cli.js start --port 9988",
-    "android": "react-native run-android --port=9988",
-    "ios": "react-native run-ios --port=9988",
+    "android": "node node_modules/react-native/local-cli/cli.js run-android --port=9988",
+    "ios": "node node_modules/react-native/local-cli/cli.js run-ios --port=9988",
     "test": "jest",
     "lint": "eslint ."
   },

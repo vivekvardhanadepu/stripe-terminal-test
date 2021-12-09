@@ -138,9 +138,9 @@ class StripeTerminal {
     });
   }
 
-  discoverReaders(method, simulated) {
-    return this._wrapPromiseReturn("readerDiscoveryCompletion", () => {
-      RNStripeTerminal.discoverReaders(method, simulated);
+  discoverReaders(method, simulated, locationId) {
+    return this._wrapPromiseReturn("readersDiscovered", () => {
+      RNStripeTerminal.discoverReaders(method, simulated, locationId);
     });
   }
 
